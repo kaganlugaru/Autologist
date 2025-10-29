@@ -1,27 +1,34 @@
 """
 Telegram парсер для сбора сообщений из групповых чатов
 Использует Telethon для подключения к Telegram API
+Версия 2.0 - улучшенная обработка и мониторинг
 """
 
 import asyncio
 import os
 import hashlib
+import json
 from datetime import datetime, timedelta
-from telethon import TelegramClient
+from telethon import TelegramClient, events
+from telethon.errors import SessionPasswordNeededError, FloodWaitError
 import firebase_admin
 from firebase_admin import credentials, firestore
 from dotenv import load_dotenv
 import logging
+import time
 
 # Загружаем переменные окружения
 load_dotenv()
+
+# Создаем папку для логов если её нет
+os.makedirs('logs', exist_ok=True)
 
 # Настройка логирования
 logging.basicConfig(
     level=logging.INFO,
     format='%(asctime)s - %(levelname)s - %(message)s',
     handlers=[
-        logging.FileHandler('logs/telegram_parser.log'),
+        logging.FileHandler('logs/telegram_parser.log', encoding='utf-8'),
         logging.StreamHandler()
     ]
 )
@@ -30,23 +37,99 @@ logger = logging.getLogger(__name__)
 class TelegramParser:
     def __init__(self):
         """Инициализация парсера"""
+        logger.info("🚀 Инициализация Telegram парсера...")
+        
         # Telegram API данные
         self.api_id = os.getenv('TELEGRAM_API_ID')
         self.api_hash = os.getenv('TELEGRAM_API_HASH')
         self.session_name = os.getenv('TELEGRAM_SESSION_NAME', 'autologist_session')
         
+        if not self.api_id or not self.api_hash:
+            logger.error("❌ TELEGRAM_API_ID и TELEGRAM_API_HASH должны быть установлены в .env файле")
+            raise ValueError("Отсутствуют API данные Telegram")
+        
         # Инициализация Telegram клиента
-        self.client = TelegramClient(self.session_name, self.api_id, self.api_hash)
+        self.client = TelegramClient(self.session_name, int(self.api_id), self.api_hash)
         
         # Инициализация Firebase
-        if not firebase_admin._apps:
-            cred = credentials.Certificate('config/firebase-service-account.json')
-            firebase_admin.initialize_app(cred)
+        self.init_firebase()
         
-        self.db = firestore.client()
+        # Список чатов для мониторинга (можно настроить в .env)
+        self.monitored_chats = self.load_monitored_chats()
         
-        # Список ID чатов для мониторинга (заполнить позже)
-        self.monitored_chats = []
+        # Кэш для предотвращения дубликатов
+        self.processed_messages = set()
+        
+        # Статистика
+        self.stats = {
+            'messages_processed': 0,
+            'messages_saved': 0,
+            'errors': 0,
+            'start_time': datetime.now()
+        }
+    
+    def init_firebase(self):
+        """Инициализация Firebase"""
+        try:
+            if not firebase_admin._apps:
+                # Пробуем разные пути к файлу конфигурации
+                config_paths = [
+                    'config/firebase-service-account.json',
+                    'firebase-service-account.json',
+                    os.getenv('FIREBASE_SERVICE_ACCOUNT_PATH', '')
+                ]
+                
+                config_path = None
+                for path in config_paths:
+                    if path and os.path.exists(path):
+                        config_path = path
+                        break
+                
+                if config_path:
+                    cred = credentials.Certificate(config_path)
+                    firebase_admin.initialize_app(cred)
+                    logger.info("✅ Firebase инициализирован с Service Account")
+                else:
+                    # Используем конфигурацию из переменных окружения
+                    project_id = os.getenv('FIREBASE_PROJECT_ID', 'autologist-91ecf')
+                    firebase_admin.initialize_app(options={'projectId': project_id})
+                    logger.info("✅ Firebase инициализирован с Project ID")
+            
+            self.db = firestore.client()
+            logger.info("✅ Firestore клиент готов")
+            
+        except Exception as e:
+            logger.error(f"❌ Ошибка инициализации Firebase: {e}")
+            raise
+    
+    def load_monitored_chats(self):
+        """Загрузка списка отслеживаемых чатов"""
+        try:
+            # Пробуем загрузить из файла конфигурации
+            if os.path.exists('config/monitored_chats.json'):
+                with open('config/monitored_chats.json', 'r', encoding='utf-8') as f:
+                    chats = json.load(f)
+                logger.info(f"✅ Загружено {len(chats)} чатов для мониторинга")
+                return chats
+            else:
+                # Создаем пример файла конфигурации
+                example_chats = [
+                    {
+                        "name": "Пример канала грузоперевозок",
+                        "username": "@cargo_channel_example",
+                        "chat_id": None,
+                        "keywords": ["груз", "перевозка", "доставка", "транспорт"],
+                        "enabled": False
+                    }
+                ]
+                os.makedirs('config', exist_ok=True)
+                with open('config/monitored_chats.json', 'w', encoding='utf-8') as f:
+                    json.dump(example_chats, f, ensure_ascii=False, indent=2)
+                logger.info("📝 Создан пример файла config/monitored_chats.json")
+                return []
+        except Exception as e:
+            logger.error(f"❌ Ошибка загрузки списка чатов: {e}")
+            return []
         
     async def start(self):
         """Запуск парсера"""
