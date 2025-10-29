@@ -1,0 +1,34 @@
+# Python зависимости для парсеров и ИИ обработки
+
+# Telegram парсер
+telethon
+
+# Firebase
+firebase-admin
+
+# ИИ и обработка текста
+google-generativeai
+requests
+
+# Обработка данных (более новые совместимые версии)
+pandas
+numpy
+
+# Обработка голосовых сообщений (опционально - установим позже)
+# vosk==0.3.45
+# pydub==0.25.1
+
+# Утилиты
+python-dotenv
+
+# Веб-запросы
+aiohttp
+
+# Логирование
+loguru
+
+# Работа с JSON
+jsonschema
+
+# Асинхронное программирование
+aiofiles

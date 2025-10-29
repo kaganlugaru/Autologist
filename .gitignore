@@ -1,0 +1,86 @@
+# 🔐 Файлы которые НЕ должны попадать в git репозиторий
+
+# Переменные окружения (содержат секретные ключи)
+.env
+.env.local
+.env.production
+
+# Сессии Telegram
+*.session
+*.session-journal
+
+# Ключи Firebase
+config/firebase-service-account.json
+firebase-debug.log
+
+# Логи
+logs/
+*.log
+
+# Node.js
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+
+# VS Code
+.vscode/
+!.vscode/settings.json
+!.vscode/tasks.json
+!.vscode/launch.json
+!.vscode/extensions.json
+
+# Временные файлы
+*.tmp
+*.temp
+temp/
+tmp/
+
+# Медиа файлы (голосовые сообщения, фото)
+media/
+downloads/
+voice_messages/
+
+# Резервные копии базы данных
+*.db
+*.sqlite
+backup/
+
+# macOS
+.DS_Store
+
+# Windows
+Thumbs.db
+Desktop.ini
+
+# IDE
+.idea/
+*.swp
+*.swo
+*~
+
+# Тестовые файлы
+test_data/
+sample_data/

@@ -1,0 +1,40 @@
+{
+  "name": "autologist",
+  "version": "1.0.0",
+  "description": "Система автоматизации грузоперевозок с парсингом чатов и ИИ",
+  "main": "index.js",
+  "scripts": {
+    "start": "node parsers/telegram-parser.js",
+    "dev": "nodemon parsers/telegram-parser.js",
+    "whatsapp": "node parsers/whatsapp-parser.js",
+    "ai-process": "node ai-processing/batch-processor.js",
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "install-all": "npm install && cd frontend && npm install",
+    "build": "cd frontend && npm run build",
+    "deploy": "cd frontend && npm run build && vercel --prod"
+  },
+  "keywords": [
+    "грузоперевозки",
+    "telegram",
+    "whatsapp",
+    "парсер",
+    "ии",
+    "автоматизация"
+  ],
+  "author": "Autologist",
+  "license": "MIT",
+  "dependencies": {
+    "whatsapp-web.js": "^1.23.0",
+    "firebase-admin": "^12.0.0",
+    "dotenv": "^16.3.1",
+    "axios": "^1.6.0",
+    "moment": "^2.29.4",
+    "qrcode-terminal": "^0.12.0"
+  },
+  "devDependencies": {
+    "nodemon": "^3.0.1"
+  },
+  "engines": {
+    "node": ">=16.0.0"
+  }
+}
