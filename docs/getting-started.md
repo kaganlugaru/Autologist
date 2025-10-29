@@ -1,4 +1,4 @@
-# 🚀 Начало работы с Autologist
+firebase init# 🚀 Начало работы с Autologist
 
 ## 📋 Что мы создали
 
