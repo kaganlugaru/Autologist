@@ -26,12 +26,12 @@ if os.environ.get('FIREBASE_KEY_JSON'):
         os.environ['GOOGLE_APPLICATION_CREDENTIALS'] = temp_key_file.name
 # --- Конец блока ---
 
+
 from flask import Flask, jsonify, request, send_from_directory
 from flask_cors import CORS
 import json
 import os
 import subprocess
-import psutil
 from datetime import datetime
 import threading
 import time
@@ -74,69 +74,17 @@ class AutologistAPI:
             return False
     
     def get_parser_status(self):
-        """Проверка статуса парсера"""
-        try:
-            # Проверяем запущенные процессы Python
-            for proc in psutil.process_iter(['pid', 'name', 'cmdline']):
-                try:
-                    if proc.info['name'] == 'python.exe' and proc.info['cmdline']:
-                        cmdline = ' '.join(proc.info['cmdline'])
-                        if 'telegram_parser_v2.py' in cmdline:
-                            return {
-                                'status': 'running',
-                                'pid': proc.info['pid'],
-                                'uptime': time.time() - proc.create_time()
-                            }
-                except (psutil.NoSuchProcess, psutil.AccessDenied):
-                    continue
-            
-            return {'status': 'stopped'}
-        except Exception as e:
-            return {'status': 'error', 'error': str(e)}
+        """Проверка статуса парсера (заглушка для Vercel)"""
+        # На сервере Vercel невозможно мониторить процессы, всегда возвращаем 'stopped'
+        return {'status': 'stopped'}
     
     def start_parser(self):
-        """Запуск парсера"""
-        try:
-            # Проверяем что парсер не запущен
-            status = self.get_parser_status()
-            if status['status'] == 'running':
-                return {'success': False, 'message': 'Парсер уже запущен'}
-            
-            # Запускаем парсер в фоне
-            self.parser_process = subprocess.Popen([
-                'python', 'parsers/telegram_parser_v2.py'
-            ], cwd=os.getcwd())
-            
-            time.sleep(2)  # Ждем немного для запуска
-            
-            return {'success': True, 'message': 'Парсер запущен', 'pid': self.parser_process.pid}
-        except Exception as e:
-            return {'success': False, 'message': f'Ошибка запуска: {str(e)}'}
+        """Запуск парсера (заглушка для Vercel)"""
+        return {'success': False, 'message': 'Запуск парсера недоступен на сервере Vercel'}
     
     def stop_parser(self):
-        """Остановка парсера"""
-        try:
-            stopped = False
-            
-            # Ищем и останавливаем все процессы парсера
-            for proc in psutil.process_iter(['pid', 'name', 'cmdline']):
-                try:
-                    if proc.info['name'] == 'python.exe' and proc.info['cmdline']:
-                        cmdline = ' '.join(proc.info['cmdline'])
-                        if 'telegram_parser_v2.py' in cmdline:
-                            proc.terminate()
-                            proc.wait(timeout=5)
-                            stopped = True
-                except (psutil.NoSuchProcess, psutil.AccessDenied, psutil.TimeoutExpired):
-                    continue
-            
-            if stopped:
-                return {'success': True, 'message': 'Парсер остановлен'}
-            else:
-                return {'success': False, 'message': 'Парсер не был запущен'}
-                
-        except Exception as e:
-            return {'success': False, 'message': f'Ошибка остановки: {str(e)}'}
+        """Остановка парсера (заглушка для Vercel)"""
+        return {'success': False, 'message': 'Остановка парсера недоступна на сервере Vercel'}
 
     def get_all_user_chats(self):
         """Получить все чаты пользователя из Telegram"""
