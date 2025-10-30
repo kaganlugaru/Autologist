@@ -416,7 +416,8 @@ def get_messages():
         messages = [doc.to_dict() for doc in docs]
         return jsonify(messages)
     except Exception as e:
-        return jsonify({'error': str(e)}), 500
+        print(f"[API ERROR] /api/messages: {e}")
+        return jsonify([]), 200
 
 @app.route('/api/messages/recent')
 def get_recent_messages():
@@ -428,7 +429,8 @@ def get_recent_messages():
         messages = [doc.to_dict() for doc in docs]
         return jsonify(messages)
     except Exception as e:
-        return jsonify({'error': str(e)}), 500
+        print(f"[API ERROR] /api/messages/recent: {e}")
+        return jsonify([]), 200
 
 @app.route('/api/search')
 def search_messages():
