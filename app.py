@@ -1,7 +1,30 @@
+
 """
 API сервер для управления Autologist системой
 Предоставляет REST API для веб-интерфейса
+
+Автоматически создает временный файл ключа Firebase из переменной окружения FIREBASE_KEY_JSON
+и устанавливает GOOGLE_APPLICATION_CREDENTIALS для работы на Vercel без физического файла.
 """
+
+# --- Блок для поддержки деплоя на Vercel без firebase_key.json ---
+import os
+import json
+import tempfile
+
+if os.environ.get('FIREBASE_KEY_JSON'):
+    key_json = os.environ['FIREBASE_KEY_JSON']
+    # Если это строка, а не путь к файлу
+    if not key_json.strip().startswith('{'):
+        # Возможно, это путь к файлу, ничего не делаем
+        pass
+    else:
+        # Создаем временный файл с ключом
+        temp_key_file = tempfile.NamedTemporaryFile(delete=False, suffix='.json')
+        temp_key_file.write(key_json.encode('utf-8'))
+        temp_key_file.close()
+        os.environ['GOOGLE_APPLICATION_CREDENTIALS'] = temp_key_file.name
+# --- Конец блока ---
 
 from flask import Flask, jsonify, request, send_from_directory
 from flask_cors import CORS
