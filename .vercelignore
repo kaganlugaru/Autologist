@@ -1,0 +1,14 @@
+# Исключаем лишние файлы и папки из деплоя на Vercel
+venv/
+__pycache__/
+*.pyc
+data/
+config/monitored_chats_cache.json
+*.log
+*.sqlite
+*.db
+*.env
+*.env.*
+node_modules/
+.DS_Store
+firebase_key.json
