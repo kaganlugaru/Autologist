@@ -1,0 +1,16 @@
+{
+  "text": "груз",
+  "source": "telegram",
+  "chat_id": "5063354364",
+  "chat_title": "тест автологист",
+  "message_id": "6437",
+  "sender_id": "5979775909",
+  "sender_name": "BZPR",
+  "timestamp": "2025-10-30T06:33:47+00:00",
+  "processed": false,
+  "hash": "6108fd3b91813f9f5b54319ff7c38b0d",
+  "created_at": "2025-10-30T11:33:46.989499",
+  "keywords_found": [
+    "груз"
+  ]
+}

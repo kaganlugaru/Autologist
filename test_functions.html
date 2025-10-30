@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Тест функций Autologist</title>
+</head>
+<body>
+    <h1>Тест JavaScript функций</h1>
+    
+    <button onclick="testShowTab()">Тест showTab</button>
+    <button onclick="testRefreshChats()">Тест refreshChats</button>
+    <button onclick="testLoadStatus()">Тест loadStatus</button>
+    
+    <div id="result"></div>
+
+    <script>
+        // Глобальные переменные
+        window.API_BASE = 'http://localhost:8080';
+        
+        // Простые тестовые функции
+        window.showTab = function(tabName) {
+            console.log('showTab called with:', tabName);
+            document.getElementById('result').innerHTML += '<p>showTab(' + tabName + ') - OK</p>';
+        };
+        
+        window.refreshChats = function() {
+            console.log('refreshChats called');
+            document.getElementById('result').innerHTML += '<p>refreshChats() - OK</p>';
+        };
+        
+        window.loadStatus = async function() {
+            console.log('loadStatus called');
+            try {
+                const response = await fetch(`${API_BASE}/api/status`);
+                const data = await response.json();
+                document.getElementById('result').innerHTML += '<p>loadStatus() - OK, данные получены</p>';
+                console.log('Status data:', data);
+            } catch (error) {
+                document.getElementById('result').innerHTML += '<p>loadStatus() - ERROR: ' + error.message + '</p>';
+            }
+        };
+        
+        function testShowTab() {
+            showTab('dashboard');
+        }
+        
+        function testRefreshChats() {
+            refreshChats();
+        }
+        
+        function testLoadStatus() {
+            loadStatus();
+        }
+    </script>
+</body>
+</html>

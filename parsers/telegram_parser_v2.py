@@ -97,34 +97,44 @@ class TelegramParser:
             # Создаем папки для локального хранения
             os.makedirs('data/messages', exist_ok=True)
     
-    def load_monitored_chats(self):
-        """Загрузка списка отслеживаемых чатов"""
+    import os
+    import json
+    import time
+
+    def load_monitored_chats(self, force_update=False):
+        """
+        Загрузка списка отслеживаемых чатов с локальным кэшированием.
+        Если force_update=True или кэш устарел/отсутствует — обновляет из Firestore.
+        """
+        CACHE_PATH = 'config/monitored_chats_cache.json'
+        CACHE_TTL = 60 * 60  # 1 час (можно изменить)
         try:
-            # Пробуем загрузить из файла конфигурации
-            if os.path.exists('config/monitored_chats.json'):
-                with open('config/monitored_chats.json', 'r', encoding='utf-8') as f:
-                    chats = json.load(f)
-                logger.info(f"✅ Загружено {len(chats)} чатов для мониторинга")
-                return chats
-            else:
-                # Создаем пример файла конфигурации
-                example_chats = [
-                    {
-                        "name": "Пример канала грузоперевозок",
-                        "username": "@cargo_channel_example", 
-                        "chat_id": None,
-                        "keywords": ["груз", "перевозка", "доставка", "транспорт", "тонн", "маршрут"],
-                        "enabled": False
-                    }
-                ]
-                os.makedirs('config', exist_ok=True)
-                with open('config/monitored_chats.json', 'w', encoding='utf-8') as f:
-                    json.dump(example_chats, f, ensure_ascii=False, indent=2)
-                logger.info("📝 Создан пример файла config/monitored_chats.json")
-                return example_chats
+            # Проверяем кэш
+            if not force_update and os.path.exists(CACHE_PATH):
+                mtime = os.path.getmtime(CACHE_PATH)
+                if time.time() - mtime < CACHE_TTL:
+                    with open(CACHE_PATH, 'r', encoding='utf-8') as f:
+                        chats = json.load(f)
+                    logger.info(f"✅ Загружено {len(chats)} чатов из локального кэша")
+                    return chats
+            # Если кэш устарел или принудительное обновление — грузим из Firestore
+            from google.cloud import firestore
+            db = firestore.Client()
+            chats_ref = db.collection('monitored_chats')
+            chats = [doc.to_dict() for doc in chats_ref.stream()]
+            # Сохраняем в кэш
+            os.makedirs('config', exist_ok=True)
+            with open(CACHE_PATH, 'w', encoding='utf-8') as f:
+                json.dump(chats, f, ensure_ascii=False, indent=2)
+            logger.info(f"✅ Загружено {len(chats)} чатов для мониторинга из Firestore и обновлён кэш")
+            return chats
         except Exception as e:
             logger.error(f"❌ Ошибка загрузки списка чатов: {e}")
             return []
+
+    def force_update_monitored_chats_cache(self):
+        """Принудительное обновление локального кэша monitored_chats из Firestore"""
+        return self.load_monitored_chats(force_update=True)
     
     def create_message_hash(self, text, sender_id, chat_id):
         """Создание хеша для дедупликации сообщений"""
@@ -134,10 +144,17 @@ class TelegramParser:
     def is_cargo_related(self, text, keywords):
         """Проверка содержит ли сообщение ключевые слова о грузах"""
         if not text:
-            return False
-            
+            return False, []
+        
         text_lower = text.lower()
-        return any(keyword.lower() in text_lower for keyword in keywords)
+        found_keywords = []
+        
+        for keyword in keywords:
+            kw = keyword.lower().strip()
+            if kw and kw in text_lower:
+                found_keywords.append(keyword)
+        
+        return len(found_keywords) > 0, found_keywords
     
     async def start(self):
         """Запуск парсера"""
@@ -201,13 +218,27 @@ class TelegramParser:
         logger.info(f"📊 Найдено {len(found_chats)} чатов, из них {len(cargo_chats)} связанных с грузоперевозками")
     
     def setup_message_handlers(self):
-        """Настройка обработчиков сообщений"""
+        """Настройка обработчиков сообщений только для выбранных чатов"""
+        # Получаем список chat_id для мониторинга
+        monitored_ids = set()
+        for chat in self.monitored_chats:
+            if chat.get('enabled', True) and chat.get('chat_id'):
+                cid = str(chat['chat_id'])
+                monitored_ids.add(cid)
+                if cid.startswith('-100'):
+                    monitored_ids.add(cid[4:])
+                if cid.startswith('-'):
+                    monitored_ids.add(cid[1:])
         
         @self.client.on(events.NewMessage())
         async def handle_new_message(event):
+            chat = await event.get_chat()
+            chat_id_str = str(getattr(chat, 'id', ''))
+            if chat_id_str not in monitored_ids:
+                return
             await self.process_message(event)
         
-        logger.info("✅ Обработчики сообщений настроены")
+        logger.info(f"✅ Обработчики сообщений настроены только для чатов: {[c['chat_id'] for c in self.monitored_chats if c.get('enabled', True)]}")
     
     async def process_message(self, event):
         """Обработка нового сообщения"""
@@ -215,8 +246,24 @@ class TelegramParser:
             message = event.message
             chat = await event.get_chat()
             
-            # Пропускаем личные сообщения
-            if not (hasattr(chat, 'title') and (chat.megagroup or chat.broadcast)):
+            # Отладочная информация о всех сообщениях
+            logger.info(f"📨 Получено сообщение от чата: {getattr(chat, 'title', 'Без названия')} (ID: {chat.id})")
+            
+            # Дополнительная отладка для тестового чата
+            if hasattr(chat, 'title') and ("тест" in chat.title.lower() or "автологист" in chat.title.lower()):
+                logger.info(f"🧪 ТЕСТОВЫЙ ЧАТ: {chat.title}")
+                logger.info(f"🧪 ID: {chat.id}")
+                logger.info(f"🧪 Тип чата: megagroup={getattr(chat, 'megagroup', None)}, broadcast={getattr(chat, 'broadcast', None)}")
+                logger.info(f"🧪 Текст: {message.text[:100] if message.text else 'Нет текста'}...")
+            
+            # Пропускаем личные сообщения  
+            if not (hasattr(chat, 'title') and (getattr(chat, 'megagroup', False) or getattr(chat, 'broadcast', False) or hasattr(chat, 'participants_count'))):
+                # Дополнительная проверка для обычных групп
+                if not hasattr(chat, 'title'):
+                    return  # Точно личное сообщение
+                
+                # Дополнительная отладка для отклоненных чатов
+                logger.debug(f"🚫 Пропускаем чат {getattr(chat, 'title', 'Без названия')}: megagroup={getattr(chat, 'megagroup', None)}, broadcast={getattr(chat, 'broadcast', None)}")
                 return
             
             # Пропускаем пустые сообщения
@@ -238,24 +285,71 @@ class TelegramParser:
             
             self.processed_messages.add(message_hash)
             
-            # Проверяем содержит ли сообщение ключевые слова
-            cargo_keywords = ['груз', 'перевозка', 'доставка', 'транспорт', 'тонн', 'маршрут', 'фура', 'газель']
+            # Ищем настройки для данного чата СРАЗУ
+            chat_config = None
+            chat_id_str = str(chat.id)
             
-            if self.is_cargo_related(message.text, cargo_keywords):
-                await self.save_message(message, chat, message_hash)
-                logger.info(f"💾 Сохранено сообщение из {chat.title}")
+            # Отладочное логирование для тестового чата
+            if "тест автологист" in chat.title.lower():
+                logger.info(f"🔍 DEBUG: Ищем настройки для '{chat.title}' с ID: {chat_id_str}")
+                config_list = [f"{c.get('title')} ({c.get('chat_id')})" for c in self.monitored_chats]
+                logger.info(f"🔍 DEBUG: Доступные чаты в конфигурации: {config_list}")
+            
+            for monitored_chat in self.monitored_chats:
+                config_chat_id = str(monitored_chat.get('chat_id', ''))
+                
+                # Отладочная информация для тестового чата
+                if "тест автологист" in chat.title.lower():
+                    logger.info(f"🔍 DEBUG: Сравниваем '{chat_id_str}' с конфигурацией '{config_chat_id}'")
+                
+                # Сравниваем ID с учетом возможных префиксов -100 и знаков
+                if (chat_id_str == config_chat_id or 
+                    chat_id_str == config_chat_id.replace('-100', '') or
+                    f'-100{chat_id_str}' == config_chat_id or
+                    f'-{chat_id_str}' == config_chat_id or
+                    chat_id_str == config_chat_id.replace('-', '')):
+                    chat_config = monitored_chat
+                    logger.info(f"🎯 Найдены настройки для чата {chat.title}: {config_chat_id}")
+                    break
+            
+            # ПРОПУСКАЕМ чаты, которые НЕ в списке мониторинга
+            if not chat_config or not chat_config.get('enabled', True):
+                logger.debug(f"⏭️ Пропускаем чат {chat.title} - не в списке мониторинга или отключен")
+                return
+            # Используем ключевые слова из настроек чата (чат уже проверен выше)
+            keywords_to_check = chat_config.get('keywords', [])
+            logger.info(f"🔑 Используем ключевые слова чата {chat.title}: {keywords_to_check}")
+            
+            # Подробное логирование для чата Калжат
+            if "калжат" in chat.title.lower():
+                logger.info(f"🔎 [Калжат] Текст сообщения: {message.text}")
+            is_cargo, found_keywords = self.is_cargo_related(message.text, keywords_to_check)
+            if "калжат" in chat.title.lower():
+                logger.info(f"🔎 [Калжат] Ключевые слова найдены: {found_keywords}")
+            if is_cargo:
+                await self.save_message(message, chat, message_hash, found_keywords)
+                logger.info(f"💾 Сохранено сообщение из {chat.title} по ключевым словам: {', '.join(found_keywords)}")
+            else:
+                logger.debug(f"❌ Сообщение из {chat.title} не содержит ключевых слов: {message.text[:50]}...")
             
         except Exception as e:
             self.stats['errors'] += 1
             logger.error(f"❌ Ошибка обработки сообщения: {e}")
     
-    async def save_message(self, message, chat, message_hash):
+    async def save_message(self, message, chat, message_hash, found_keywords=None):
         """Сохранение сообщения в Firebase или локально"""
         try:
             # Получаем информацию об отправителе
             sender = await message.get_sender()
             sender_name = ""
+            sender_username = ""
+            
             if sender:
+                # Получаем username (ник с @)
+                if hasattr(sender, 'username') and sender.username:
+                    sender_username = sender.username
+                
+                # Получаем имя пользователя
                 if hasattr(sender, 'first_name') and sender.first_name:
                     sender_name = sender.first_name
                     if hasattr(sender, 'last_name') and sender.last_name:
@@ -272,10 +366,12 @@ class TelegramParser:
                 'message_id': str(message.id),
                 'sender_id': str(message.sender_id) if message.sender_id else None,
                 'sender_name': sender_name,
+                'sender_username': sender_username,
                 'timestamp': message.date.isoformat() if message.date else datetime.now().isoformat(),
                 'processed': False,
                 'hash': message_hash,
-                'created_at': datetime.now().isoformat()
+                'created_at': datetime.now().isoformat(),
+                'keywords_found': found_keywords or []
             }
             
             if hasattr(self, 'use_local_storage') and self.use_local_storage:

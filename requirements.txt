@@ -14,6 +14,14 @@ requests
 pandas
 numpy
 
+# API сервер
+flask
+flask-cors
+psutil
+
+# Переменные окружения
+python-dotenv
+
 # Обработка голосовых сообщений (опционально - установим позже)
 # vosk==0.3.45
 # pydub==0.25.1

@@ -1,0 +1,792 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Autologist - Система управления грузоперевозками</title>
+    
+    <!-- Современные стили Material Design -->
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Google Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Arial, sans-serif;
+            background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+            color: #202124;
+            line-height: 1.6;
+            min-height: 100vh;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        /* Заголовок системы */
+        .header {
+            background: white;
+            border-radius: 16px;
+            padding: 30px;
+            margin-bottom: 30px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+            border: 1px solid rgba(0,0,0,0.05);
+        }
+
+        .header h1 {
+            font-size: 2.5rem;
+            font-weight: 300;
+            color: #1a73e8;
+            margin-bottom: 10px;
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+
+        .header p {
+            color: #5f6368;
+            font-size: 1.1rem;
+            font-weight: 400;
+        }
+
+        /* Навигация */
+        .nav-tabs {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 30px;
+            overflow-x: auto;
+            padding: 8px;
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+        }
+
+        .nav-tab {
+            background: none;
+            border: none;
+            padding: 16px 24px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 500;
+            color: #5f6368;
+            transition: all 0.2s ease;
+            white-space: nowrap;
+            position: relative;
+        }
+
+        .nav-tab:hover {
+            background: rgba(26, 115, 232, 0.08);
+            color: #1a73e8;
+        }
+
+        .nav-tab.active {
+            background: #1a73e8;
+            color: white;
+            box-shadow: 0 2px 8px rgba(26, 115, 232, 0.3);
+        }
+
+        /* Контент вкладок */
+        .tab-content {
+            background: white;
+            border-radius: 16px;
+            padding: 30px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+            border: 1px solid rgba(0,0,0,0.05);
+            min-height: 500px;
+        }
+
+        .tab-pane {
+            display: none;
+        }
+
+        .tab-pane.active {
+            display: block;
+        }
+
+        /* Кнопки */
+        .btn {
+            background: #1a73e8;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 500;
+            transition: all 0.2s ease;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            text-decoration: none;
+        }
+
+        .btn:hover {
+            background: #1557b0;
+            box-shadow: 0 4px 12px rgba(26, 115, 232, 0.3);
+        }
+
+        .btn-success {
+            background: #34a853;
+        }
+
+        .btn-success:hover {
+            background: #2d8f47;
+        }
+
+        .btn-danger {
+            background: #ea4335;
+        }
+
+        .btn-danger:hover {
+            background: #d23b2d;
+        }
+
+        .btn-sm {
+            padding: 8px 16px;
+            font-size: 13px;
+        }
+
+        /* Контролы */
+        .controls {
+            display: flex;
+            gap: 12px;
+            margin-bottom: 24px;
+            flex-wrap: wrap;
+        }
+
+        /* Статистика */
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+
+        .stat-card {
+            background: white;
+            border-radius: 12px;
+            padding: 24px;
+            border-left: 4px solid #1a73e8;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+            transition: transform 0.2s ease;
+        }
+
+        .stat-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 16px rgba(0,0,0,0.12);
+        }
+
+        .stat-card.success {
+            border-left-color: #34a853;
+        }
+
+        .stat-card.warning {
+            border-left-color: #fbbc04;
+        }
+
+        .stat-card.danger {
+            border-left-color: #ea4335;
+        }
+
+        .stat-number {
+            font-size: 2rem;
+            font-weight: 600;
+            color: #1a73e8;
+            margin-bottom: 8px;
+        }
+
+        .stat-label {
+            color: #5f6368;
+            font-size: 14px;
+            font-weight: 500;
+        }
+
+        /* Формы */
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 500;
+            color: #202124;
+        }
+
+        .form-control {
+            width: 100%;
+            padding: 12px 16px;
+            border: 2px solid #e8eaed;
+            border-radius: 8px;
+            font-size: 14px;
+            transition: border-color 0.2s ease;
+        }
+
+        .form-control:focus {
+            outline: none;
+            border-color: #1a73e8;
+            box-shadow: 0 0 0 3px rgba(26, 115, 232, 0.1);
+        }
+
+        /* Таблицы */
+        .table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+        }
+
+        .table th,
+        .table td {
+            padding: 16px;
+            text-align: left;
+            border-bottom: 1px solid #e8eaed;
+        }
+
+        .table th {
+            background: #f8f9fa;
+            font-weight: 600;
+            color: #202124;
+            font-size: 14px;
+        }
+
+        .table td {
+            font-size: 14px;
+            vertical-align: middle;
+        }
+
+        .table tr:hover {
+            background: #f8f9fa;
+        }
+
+        /* Карточки */
+        .info-card {
+            background: #e8f4fd;
+            border: 1px solid #d2e3fc;
+            border-radius: 8px;
+            padding: 20px;
+            text-align: center;
+            color: #1967d2;
+            font-size: 16px;
+        }
+
+        .error-card {
+            background: #fce8e6;
+            border: 1px solid #f9ab00;
+            border-radius: 8px;
+            padding: 20px;
+            text-align: center;
+            color: #d73027;
+            font-size: 16px;
+        }
+
+        /* Адаптивность */
+        @media (max-width: 768px) {
+            .container {
+                padding: 15px;
+            }
+
+            .header h1 {
+                font-size: 2rem;
+            }
+
+            .nav-tabs {
+                flex-direction: column;
+                gap: 4px;
+            }
+
+            .nav-tab {
+                text-align: center;
+            }
+
+            .stats-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .controls {
+                flex-direction: column;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- Заголовок -->
+        <div class="header">
+            <h1>🚛 Autologist</h1>
+            <p>Профессиональная система автоматизации грузоперевозок</p>
+        </div>
+
+        <!-- Навигация -->
+        <div class="nav-tabs">
+            <button class="nav-tab active" data-tab="dashboard">📊 Панель управления</button>
+            <button class="nav-tab" data-tab="chats">💬 Чаты</button>
+            <button class="nav-tab" data-tab="chat-management">⚙️ Управление чатами</button>
+            <button class="nav-tab" data-tab="messages">📨 Сообщения</button>
+        </div>
+
+        <!-- Контент -->
+        <div class="tab-content">
+            <!-- Панель управления -->
+            <div id="dashboard" class="tab-pane active">
+                <h2>📊 Статистика системы</h2>
+                
+                <div class="stats-grid">
+                    <div class="stat-card">
+                        <div class="stat-number" id="totalMessages">0</div>
+                        <div class="stat-label">Всего сообщений</div>
+                    </div>
+                    <div class="stat-card success">
+                        <div class="stat-number" id="activeChats">0</div>
+                        <div class="stat-label">Активных чатов</div>
+                    </div>
+                    <div class="stat-card warning">
+                        <div class="stat-number" id="todayMessages">0</div>
+                        <div class="stat-label">Сегодня сообщений</div>
+                    </div>
+                    <div class="stat-card danger">
+                        <div class="stat-number" id="errorCount">0</div>
+                        <div class="stat-label">Ошибок</div>
+                    </div>
+                </div>
+
+                <!-- Управление чатами -->
+                <h3>📋 Управление чатами</h3>
+                <div class="controls">
+                    <button class="btn btn-primary" data-action="refresh-chats">🔄 Обновить</button>
+                    <button class="btn btn-success" data-action="start-parser">▶️ Запустить парсер</button>
+                    <button class="btn btn-danger" data-action="stop-parser">⏹️ Остановить парсер</button>
+                </div>
+
+                <div id="status"></div>
+            </div>
+
+            <!-- Чаты -->
+            <div id="chats" class="tab-pane">
+                <h2>💬 Обнаруженные чаты</h2>
+                <div class="controls">
+                    <button class="btn" data-action="refresh-chats">🔄 Обновить список</button>
+                </div>
+                <div id="chats-content"></div>
+            </div>
+
+            <!-- Управление чатами -->
+            <div id="chat-management" class="tab-pane">
+                <h2>⚙️ Управление отслеживаемыми чатами</h2>
+                
+                <!-- Форма добавления чата -->
+                <div style="background: #f8f9fa; padding: 20px; border-radius: 8px; margin-bottom: 30px;">
+                    <h3>➕ Добавить чат в мониторинг</h3>
+                    <div style="display: grid; grid-template-columns: 1fr 1fr 200px; gap: 15px; align-items: end;">
+                        <div class="form-group">
+                            <label for="chatId">ID чата:</label>
+                            <input type="text" id="chatId" class="form-control" placeholder="Например: -1001234567890">
+                        </div>
+                        <div class="form-group">
+                            <label for="keywords">Ключевые слова:</label>
+                            <input type="text" id="keywords" class="form-control" placeholder="груз, перевозка, доставка">
+                        </div>
+                        <div class="form-group">
+                            <button onclick="addChat()" class="btn btn-success" style="width: 100%;">Добавить</button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Список отслеживаемых чатов -->
+                <h3>📋 Отслеживаемые чаты</h3>
+                <table class="table">
+                    <thead>
+                        <tr>
+                            <th>Название</th>
+                            <th>ID чата</th>
+                            <th>Ключевые слова</th>
+                            <th>Действия</th>
+                        </tr>
+                    </thead>
+                    <tbody id="monitored-chats-table">
+                        <tr>
+                            <td colspan="4" class="info">Загрузка...</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- Сообщения -->
+            <div id="messages" class="tab-pane">
+                <h2>📨 Последние сообщения</h2>
+                <div class="controls">
+                    <button class="btn" onclick="loadMessages()">🔄 Обновить сообщения</button>
+                </div>
+                <div id="messages-content"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Инициализация основных функций (КРИТИЧЕСКИ ВАЖНО - ДО Firebase) -->
+    <script>
+        // Глобальные переменные
+        window.API_BASE = 'http://localhost:8080';
+        window.chatsConfig = [];
+
+        // ОСНОВНЫЕ ФУНКЦИИ - ОПРЕДЕЛЯЕМ СРАЗУ
+        window.showTab = function(tabName) {
+            try {
+                console.log('showTab вызвана для:', tabName);
+                
+                // Скрываем все вкладки
+                document.querySelectorAll('.tab-pane').forEach(pane => {
+                    pane.classList.remove('active');
+                });
+                
+                // Убираем активность с кнопок
+                document.querySelectorAll('.nav-tab').forEach(tab => {
+                    tab.classList.remove('active');
+                });
+                
+                // Показываем выбранную вкладку
+                const targetTab = document.getElementById(tabName);
+                if (targetTab) {
+                    targetTab.classList.add('active');
+                }
+                
+                // Активируем кнопку
+                if (event && event.target) {
+                    event.target.classList.add('active');
+                }
+                
+                // Загружаем данные для специфичных вкладок
+                if (tabName === 'chat-management') {
+                    if (window.loadMonitoredChats) {
+                        window.loadMonitoredChats();
+                    }
+                } else if (tabName === 'dashboard') {
+                    if (window.loadStatus) window.loadStatus();
+                    if (window.loadChats) window.loadChats();
+                } else if (tabName === 'messages') {
+                    if (window.loadMessages) {
+                        window.loadMessages();
+                    }
+                } else if (tabName === 'chats') {
+                    if (window.loadChats) {
+                        window.loadChats();
+                    }
+                }
+                
+                console.log('showTab выполнена успешно для:', tabName);
+            } catch (error) {
+                console.error('Ошибка переключения вкладки:', error);
+            }
+        };
+
+        window.refreshChats = function() {
+            try {
+                console.log('refreshChats вызвана');
+                if (window.loadChats) {
+                    window.loadChats();
+                }
+            } catch (error) {
+                console.error('Ошибка refreshChats:', error);
+            }
+        };
+
+        window.startParser = async function() {
+            try {
+                console.log('Запуск парсера...');
+                const response = await fetch(`${window.API_BASE}/api/parser/start`, {
+                    method: 'POST'
+                });
+                
+                const result = await response.json();
+                
+                if (result.success) {
+                    alert('✅ ' + result.message);
+                    if (window.loadStatus) window.loadStatus();
+                } else {
+                    alert('❌ ' + result.message);
+                }
+            } catch (error) {
+                console.error('Ошибка запуска парсера:', error);
+                alert('Ошибка соединения с сервером');
+            }
+        };
+
+        window.stopParser = async function() {
+            try {
+                console.log('Остановка парсера...');
+                const response = await fetch(`${window.API_BASE}/api/parser/stop`, {
+                    method: 'POST'
+                });
+                
+                const result = await response.json();
+                
+                if (result.success) {
+                    alert('✅ ' + result.message);
+                    if (window.loadStatus) window.loadStatus();
+                } else {
+                    alert('❌ ' + result.message);
+                }
+            } catch (error) {
+                console.error('Ошибка остановки парсера:', error);
+                alert('Ошибка соединения с сервером');
+            }
+        };
+
+        window.loadStatus = async function() {
+            try {
+                console.log('Загрузка статуса...');
+                const response = await fetch(`${window.API_BASE}/api/status`);
+                const status = await response.json();
+                
+                const statusElement = document.getElementById('status');
+                if (statusElement) {
+                    statusElement.innerHTML = `
+                        <div class="info-card">
+                            <h3>📊 Статус системы</h3>
+                            <p><strong>Парсер:</strong> ${status.parser_status === 'running' ? '🟢 Работает' : '🔴 Остановлен'}</p>
+                            <p><strong>Всего чатов:</strong> ${status.total_chats || 0}</p>
+                            <p><strong>Активных чатов:</strong> ${status.active_chats || 0}</p>
+                        </div>
+                    `;
+                }
+
+                // Обновляем статистику
+                document.getElementById('totalMessages').textContent = status.total_messages || 0;
+                document.getElementById('activeChats').textContent = status.active_chats || 0;
+                document.getElementById('todayMessages').textContent = status.today_messages || 0;
+                document.getElementById('errorCount').textContent = status.error_count || 0;
+                
+            } catch (error) {
+                console.error('Ошибка загрузки статуса:', error);
+            }
+        };
+
+        window.loadChats = async function() {
+            try {
+                console.log('Загрузка чатов...');
+                const response = await fetch(`${window.API_BASE}/api/chats/all`);
+                const chats = await response.json();
+                
+                const chatsElement = document.getElementById('chats-content');
+                if (chatsElement) {
+                    if (chats.length === 0) {
+                        chatsElement.innerHTML = '<div class="info-card">📭 Нет найденных чатов</div>';
+                    } else {
+                        chatsElement.innerHTML = `
+                            <table class="table">
+                                <thead>
+                                    <tr>
+                                        <th>Название</th>
+                                        <th>ID</th>
+                                        <th>Тип</th>
+                                        <th>Участников</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    ${chats.map(chat => `
+                                        <tr>
+                                            <td><strong>${chat.title || chat.username || 'Неизвестный чат'}</strong></td>
+                                            <td><code>${chat.id}</code></td>
+                                            <td>${chat.type}</td>
+                                            <td>${chat.participants_count || 'Неизвестно'}</td>
+                                        </tr>
+                                    `).join('')}
+                                </tbody>
+                            </table>
+                        `;
+                    }
+                }
+            } catch (error) {
+                console.error('Ошибка загрузки чатов:', error);
+                const chatsElement = document.getElementById('chats-content');
+                if (chatsElement) {
+                    chatsElement.innerHTML = '<div class="error-card">❌ Ошибка загрузки чатов</div>';
+                }
+            }
+        };
+
+        window.loadMessages = async function() {
+            try {
+                console.log('Загрузка сообщений...');
+                const response = await fetch(`${window.API_BASE}/api/messages/recent`);
+                const messages = await response.json();
+                
+                const messagesElement = document.getElementById('messages-content');
+                if (messagesElement) {
+                    if (messages.length === 0) {
+                        messagesElement.innerHTML = '<div class="info-card">📭 Нет новых сообщений</div>';
+                    } else {
+                        messagesElement.innerHTML = `
+                            <div style="display: grid; gap: 15px;">
+                                ${messages.map(msg => `
+                                    <div style="background: white; padding: 20px; border-radius: 8px; border-left: 4px solid #1a73e8; box-shadow: 0 2px 8px rgba(0,0,0,0.08);">
+                                        <div style="margin-bottom: 10px;">
+                                            <strong style="color: #1a73e8;">${msg.chat_title || 'Неизвестный чат'}</strong>
+                                            <span style="color: #5f6368; margin-left: 10px;">📅 ${new Date(msg.date).toLocaleString()}</span>
+                                        </div>
+                                        <div style="margin-bottom: 10px;">
+                                            <strong>От:</strong> ${msg.sender_username || msg.sender_id}
+                                        </div>
+                                        <div style="background: #f8f9fa; padding: 15px; border-radius: 8px;">
+                                            ${msg.message}
+                                        </div>
+                                    </div>
+                                `).join('')}
+                            </div>
+                        `;
+                    }
+                }
+            } catch (error) {
+                console.error('Ошибка загрузки сообщений:', error);
+                const messagesElement = document.getElementById('messages-content');
+                if (messagesElement) {
+                    messagesElement.innerHTML = '<div class="error-card">❌ Ошибка загрузки сообщений</div>';
+                }
+            }
+        };
+
+        window.loadMonitoredChats = async function() {
+            try {
+                console.log('Загрузка отслеживаемых чатов...');
+                const response = await fetch(`${window.API_BASE}/api/chats/monitored`);
+                const data = await response.json();
+                
+                window.chatsConfig = data.chats || [];
+                window.renderMonitoredChatsTable();
+            } catch (error) {
+                console.error('Ошибка загрузки отслеживаемых чатов:', error);
+                document.getElementById('monitored-chats-table').innerHTML = 
+                    '<tr><td colspan="4" class="error">Ошибка загрузки данных</td></tr>';
+            }
+        };
+
+        window.renderMonitoredChatsTable = function() {
+            const tbody = document.getElementById('monitored-chats-table');
+            if (!tbody) return;
+            
+            if (window.chatsConfig.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="4" style="text-align: center; color: #5f6368;">Нет отслеживаемых чатов</td></tr>';
+                return;
+            }
+            
+            tbody.innerHTML = window.chatsConfig.map(chat => `
+                <tr>
+                    <td><strong>${chat.title || chat.username || chat.chat_id}</strong></td>
+                    <td><code>${chat.chat_id}</code></td>
+                    <td>${(chat.keywords || []).join(', ') || 'Нет ключевых слов'}</td>
+                    <td>
+                        <button class="btn btn-danger btn-sm" onclick="removeChat('${chat.chat_id}')">
+                            🗑️ Удалить
+                        </button>
+                    </td>
+                </tr>
+            `).join('');
+        };
+
+        window.addChat = async function() {
+            const chatId = document.getElementById('chatId').value.trim();
+            const keywords = document.getElementById('keywords').value.trim();
+            
+            if (!chatId) {
+                alert('❌ Введите ID чата');
+                return;
+            }
+            
+            try {
+                const response = await fetch(`${window.API_BASE}/api/chats/add`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        chat_id: chatId,
+                        keywords: keywords ? keywords.split(',').map(k => k.trim()) : []
+                    })
+                });
+                
+                const result = await response.json();
+                
+                if (result.success) {
+                    alert('✅ ' + result.message);
+                    document.getElementById('chatId').value = '';
+                    document.getElementById('keywords').value = '';
+                    window.loadMonitoredChats();
+                } else {
+                    alert('❌ ' + result.message);
+                }
+            } catch (error) {
+                console.error('Ошибка добавления чата:', error);
+                alert('Ошибка соединения с сервером');
+            }
+        };
+
+        window.removeChat = async function(chatId) {
+            if (!confirm(`Удалить чат ${chatId}?`)) return;
+            
+            try {
+                const response = await fetch(`${window.API_BASE}/api/chats/remove`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ chat_id: chatId })
+                });
+                
+                const result = await response.json();
+                
+                if (result.success) {
+                    alert('✅ ' + result.message);
+                    window.loadMonitoredChats();
+                } else {
+                    alert('❌ ' + result.message);
+                }
+            } catch (error) {
+                console.error('Ошибка удаления чата:', error);
+                alert('Ошибка соединения с сервером');
+            }
+        };
+
+        // Инициализация при загрузке
+        document.addEventListener('DOMContentLoaded', function() {
+            console.log('🚀 DOM загружен, инициализация...');
+            
+            // Обработчики событий для кнопок навигации
+            document.querySelectorAll('[data-tab]').forEach(button => {
+                button.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    const tabName = this.getAttribute('data-tab');
+                    if (window.showTab) {
+                        window.showTab(tabName);
+                    }
+                });
+            });
+
+            // Обработчики для кнопок действий
+            document.querySelectorAll('[data-action]').forEach(button => {
+                button.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    const action = this.getAttribute('data-action');
+                    
+                    switch(action) {
+                        case 'refresh-chats':
+                            if (window.refreshChats) window.refreshChats();
+                            break;
+                        case 'start-parser':
+                            if (window.startParser) window.startParser();
+                            break;
+                        case 'stop-parser':
+                            if (window.stopParser) window.stopParser();
+                            break;
+                    }
+                });
+            });
+
+            // Загружаем начальные данные
+            if (window.loadStatus) window.loadStatus();
+            
+            console.log('✅ Инициализация завершена');
+        });
+
+        console.log('✅ Все функции определены и готовы к использованию');
+    </script>
+</body>
+</html>

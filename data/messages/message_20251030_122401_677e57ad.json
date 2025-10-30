@@ -1,0 +1,16 @@
+{
+  "text": "Бронь вне очереди для опасных грузов, ускоренная для обычных ТС",
+  "source": "telegram",
+  "chat_id": "1656314936",
+  "chat_title": "CarGoRuqsat",
+  "message_id": "462175",
+  "sender_id": null,
+  "sender_name": "",
+  "timestamp": "2025-10-30T07:23:06+00:00",
+  "processed": false,
+  "hash": "677e57ad76a01cd930e35ae9108e70d3",
+  "created_at": "2025-10-30T12:24:01.659434",
+  "keywords_found": [
+    "груз"
+  ]
+}
