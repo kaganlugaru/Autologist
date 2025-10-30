@@ -12,3 +12,6 @@ config/monitored_chats_cache.json
 node_modules/
 .DS_Store
 firebase_key.json
+node_modules/
+**/node_modules/
+**/.local-chromium/
